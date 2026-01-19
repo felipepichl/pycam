@@ -1,0 +1,65 @@
+{
+  "expo": {
+    "name": "PYCam",
+    "slug": "PYCam",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#24242e"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.triadge.pycam",
+      "infoPlist": {
+        "NSCameraUsageDescription": "Este app precisa acessar a câmera para funcionar como webcam",
+        "NSMicrophoneUsageDescription": "Este app precisa acessar o microfone para funcionar como webcam",
+        "UIBackgroundModes": [
+          "remote-notification"
+        ]
+      }
+    },
+    "android": {
+      "package": "com.triadge.pycam",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#24242e"
+      },
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO"
+      ]
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-font",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/icon.png",
+          "color": "#24242e",
+          "sounds": [],
+          "mode": "production"
+        }
+      ],
+      [
+        "react-native-vision-camera",
+        {
+          "cameraPermissionText": "$(PRODUCT_NAME) precisa acessar sua câmera para funcionar como webcam.",
+          "enableCodeScanner": false
+        }
+      ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "c75b7f4e-1859-4276-ab26-a0221af253ad"
+      }
+    }
+  }
+}
