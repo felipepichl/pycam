@@ -16,7 +16,7 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.triadge.pycam",
       "infoPlist": {
-        "NSCameraUsageDescription": "Este app precisa acessar a câmera para funcionar como webcam",
+        "NSCameraUsageDescription": "$(PRODUCT_NAME) precisa acessar sua câmera para funcionar como webcam.",
         "NSMicrophoneUsageDescription": "Este app precisa acessar o microfone para funcionar como webcam",
         "UIBackgroundModes": [
           "remote-notification"
@@ -31,7 +31,8 @@
       },
       "permissions": [
         "CAMERA",
-        "RECORD_AUDIO"
+        "RECORD_AUDIO",
+        "android.permission.CAMERA"
       ]
     },
     "web": {
@@ -39,15 +40,6 @@
     },
     "plugins": [
       "expo-font",
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/icon.png",
-          "color": "#24242e",
-          "sounds": [],
-          "mode": "production"
-        }
-      ],
       [
         "react-native-vision-camera",
         {
@@ -58,7 +50,7 @@
     ],
     "extra": {
       "eas": {
-        "projectId": "c75b7f4e-1859-4276-ab26-a0221af253ad"
+        "projectId": "8a2f65de-9dea-4b19-857b-100ba143ba5f"
       }
     }
   }
