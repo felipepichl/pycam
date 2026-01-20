@@ -1,4 +1,4 @@
-aimport { Button } from '@components/Button'
+import { Button } from '@components/Button'
 import { Loading } from '@components/Loading'
 import { Box } from '@components/ui/box'
 import { VStack } from '@components/ui/vstack'
