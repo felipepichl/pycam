@@ -52,6 +52,16 @@ module.exports = {
           DEFAULT: 'hsl(var(--card))',
           foreground: 'hsl(var(--card-foreground))',
         },
+        // Mobile colors
+        gray: {
+          100: '#E1E1E6',
+          500: '#29292E',
+          700: '#121214',
+        },
+        green: {
+          500: '#00B37E',
+          700: '#00875F',
+        },
       },
       borderRadius: {
         lg: 'var(--radius)',
