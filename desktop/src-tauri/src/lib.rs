@@ -53,7 +53,9 @@ async fn handle_socket(socket: WebSocket, frame_tx: FrameChannel) {
         }
     });
 
-    // Task para receber mensagens do cliente (ping/pong, close, etc)
+    // Task para receber mensagens do cliente
+    // Se receber mensagem binária, é um frame do mobile - fazer broadcast
+    // Se receber ping, responder com pong
     let mut recv_task = tokio::spawn(async move {
         while let Some(Ok(msg)) = receiver.next().await {
             match msg {
@@ -63,6 +65,10 @@ async fn handle_socket(socket: WebSocket, frame_tx: FrameChannel) {
                     if control_tx.send(Message::Pong(data)).is_err() {
                         break;
                     }
+                }
+                Message::Binary(frame_data) => {
+                    // Frame recebido do mobile - fazer broadcast para todos os clientes
+                    let _ = frame_tx.send(frame_data);
                 }
                 _ => {}
             }
