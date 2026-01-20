@@ -1,127 +1,102 @@
+// Prevents additional console window on Windows in release, DO NOT REMOVE!!
+#![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
+
 use axum::{
-    extract::{
-        ws::{Message, WebSocket, WebSocketUpgrade},
-        State,
-    },
+    extract::State,
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::IntoResponse,
     routing::{get, post},
-    Router,
+    Json, Router,
 };
-use futures_util::{SinkExt, StreamExt};
+use serde::{Deserialize, Serialize};
 use std::sync::Arc;
-use tokio::sync::{broadcast, mpsc};
+use tokio::sync::Mutex;
 use tower_http::cors::CorsLayer;
 
-// Canal de broadcast para múltiplos clientes WebSocket
-type FrameChannel = Arc<broadcast::Sender<Vec<u8>>>;
-
-// Handler WebSocket para conexões do frontend
-async fn websocket_handler(
-    ws: WebSocketUpgrade,
-    State(frame_tx): State<FrameChannel>,
-) -> Response {
-    ws.on_upgrade(|socket| handle_socket(socket, frame_tx))
+// Mensagens de signaling WebRTC
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(tag = "type")]
+pub enum SignalingMessage {
+    #[serde(rename = "offer")]
+    Offer { sdp: String },
+    #[serde(rename = "answer")]
+    Answer { sdp: String },
+    #[serde(rename = "ice-candidate")]
+    IceCandidate { candidate: serde_json::Value },
 }
 
-async fn handle_socket(socket: WebSocket, frame_tx: FrameChannel) {
-    let (mut sender, mut receiver) = socket.split();
-
-    // Criar receiver para receber frames do canal
-    let mut rx = frame_tx.subscribe();
-
-    // Canal interno para comunicação entre tasks (pong, close, etc)
-    let (control_tx, mut control_rx) = mpsc::unbounded_channel::<Message>();
-
-    // Task para enviar frames e mensagens de controle ao cliente
-    let mut send_task = tokio::spawn(async move {
-        loop {
-            tokio::select! {
-                // Receber frames do broadcast
-                Ok(frame) = rx.recv() => {
-                    if sender.send(Message::Binary(frame)).await.is_err() {
-                        break;
-                    }
-                }
-                // Receber mensagens de controle (pong, etc)
-                Some(msg) = control_rx.recv() => {
-                    if sender.send(msg).await.is_err() {
-                        break;
-                    }
-                }
-            }
-        }
-    });
-
-    // Task para receber mensagens do cliente
-    // Se receber mensagem binária, é um frame do mobile - fazer broadcast
-    // Se receber ping, responder com pong
-    let mut recv_task = tokio::spawn(async move {
-        while let Some(Ok(msg)) = receiver.next().await {
-            match msg {
-                Message::Close(_) => break,
-                Message::Ping(data) => {
-                    // Enviar pong através do canal de controle
-                    if control_tx.send(Message::Pong(data)).is_err() {
-                        break;
-                    }
-                }
-                Message::Binary(frame_data) => {
-                    // Frame recebido do mobile - fazer broadcast para todos os clientes
-                    let _ = frame_tx.send(frame_data);
-                }
-                _ => {}
-            }
-        }
-    });
-
-    // Aguardar uma das tasks terminar
-    tokio::select! {
-        _ = (&mut send_task) => {
-            recv_task.abort();
-        }
-        _ = (&mut recv_task) => {
-            send_task.abort();
-        }
-    }
+// Estado compartilhado para signaling
+#[derive(Clone)]
+struct SignalingState {
+    // Mensagens do mobile (offer, ICE candidates)
+    mobile_messages: Arc<Mutex<Vec<SignalingMessage>>>,
+    // Mensagens do desktop (answer, ICE candidates)
+    desktop_messages: Arc<Mutex<Vec<SignalingMessage>>>,
 }
 
-// Endpoint POST /frame para receber frames do mobile
-async fn receive_frame(
-    State(frame_tx): State<FrameChannel>,
-    body: axum::body::Bytes,
+// Endpoint para mobile enviar mensagens (offer, ICE candidates)
+async fn mobile_send(
+    State(state): State<SignalingState>,
+    Json(message): Json<SignalingMessage>,
 ) -> impl IntoResponse {
-    // Converter body para Vec<u8>
-    let frame = body.to_vec();
-
-    // Broadcast frame para todos os clientes WebSocket conectados
-    let _ = frame_tx.send(frame);
-
-    // Retornar resposta de sucesso
-    (StatusCode::OK, r#"{"status":"ok"}"#)
+    println!("📥 Mobile sent: {:?}", message);
+    let mut messages = state.mobile_messages.lock().await;
+    messages.push(message);
+    println!("📦 Total mobile messages: {}", messages.len());
+    (StatusCode::OK, Json(serde_json::json!({"status": "ok"})))
 }
 
-// Criar servidor HTTP com WebSocket
-async fn start_streaming_server(frame_tx: FrameChannel) {
-    // Configurar CORS para permitir conexões do mobile
+// Endpoint para mobile receber mensagens (answer, ICE candidates)
+async fn mobile_receive(State(state): State<SignalingState>) -> impl IntoResponse {
+    let mut messages = state.desktop_messages.lock().await;
+    if messages.is_empty() {
+        return (StatusCode::OK, Json(serde_json::json!([]))).into_response();
+    }
+    let response: Vec<SignalingMessage> = messages.drain(..).collect();
+    (StatusCode::OK, Json(response)).into_response()
+}
+
+// Endpoint para desktop enviar mensagens (answer, ICE candidates)
+async fn desktop_send(
+    State(state): State<SignalingState>,
+    Json(message): Json<SignalingMessage>,
+) -> impl IntoResponse {
+    let mut messages = state.desktop_messages.lock().await;
+    messages.push(message);
+    (StatusCode::OK, Json(serde_json::json!({"status": "ok"})))
+}
+
+// Endpoint para desktop receber mensagens (offer, ICE candidates)
+async fn desktop_receive(State(state): State<SignalingState>) -> impl IntoResponse {
+    let mut messages = state.mobile_messages.lock().await;
+    if messages.is_empty() {
+        return (StatusCode::OK, Json(serde_json::json!([]))).into_response();
+    }
+    println!("📤 Desktop receiving {} message(s)", messages.len());
+    let response: Vec<SignalingMessage> = messages.drain(..).collect();
+    (StatusCode::OK, Json(response)).into_response()
+}
+
+// Criar servidor HTTP para signaling
+async fn start_signaling_server(state: SignalingState) {
     let cors = CorsLayer::new()
         .allow_origin(tower_http::cors::Any)
         .allow_methods(tower_http::cors::Any)
         .allow_headers(tower_http::cors::Any);
 
-    // Criar router
     let app = Router::new()
-        .route("/ws", get(websocket_handler))
-        .route("/frame", post(receive_frame))
+        .route("/mobile/send", post(mobile_send))
+        .route("/mobile/receive", get(mobile_receive))
+        .route("/desktop/send", post(desktop_send))
+        .route("/desktop/receive", get(desktop_receive))
         .layer(cors)
-        .with_state(frame_tx);
+        .with_state(state);
 
-    // Iniciar servidor na porta 3000
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3000")
         .await
         .expect("Failed to bind server");
 
-    println!("🚀 Streaming server started on http://0.0.0.0:3000");
+    println!("🚀 HTTP Signaling server started on http://0.0.0.0:3000");
 
     axum::serve(listener, app)
         .await
@@ -138,20 +113,19 @@ async fn get_local_ip() -> Result<String, String> {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    // Criar canal de broadcast com buffer de 100 frames
-    let (frame_tx, _) = broadcast::channel::<Vec<u8>>(100);
-    let frame_tx = Arc::new(frame_tx);
+    // Criar estado compartilhado
+    let state = SignalingState {
+        mobile_messages: Arc::new(Mutex::new(Vec::new())),
+        desktop_messages: Arc::new(Mutex::new(Vec::new())),
+    };
 
-    // Criar runtime Tokio para o servidor
-    let server_tx = frame_tx.clone();
+    // Iniciar servidor HTTP em thread separada
+    let server_state = state.clone();
     std::thread::spawn(move || {
-        // Criar runtime Tokio dedicado para o servidor
         let rt = tokio::runtime::Runtime::new()
             .expect("Failed to create Tokio runtime");
-        
-        // Iniciar servidor no runtime
         rt.block_on(async {
-            start_streaming_server(server_tx).await;
+            start_signaling_server(server_state).await;
         });
     });
 
