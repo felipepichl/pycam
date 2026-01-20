@@ -1,0 +1,13 @@
+{
+  "eslint.workingDirectories": [
+    "desktop",
+    "mobile",
+    "vite-web"
+  ],
+  "eslint.validate": [
+    "javascript",
+    "javascriptreact",
+    "typescript",
+    "typescriptreact"
+  ]
+}

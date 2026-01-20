@@ -1,100 +1,79 @@
-# PYCam Desktop App
+# Desktop App - Tauri
 
-Aplicativo Electron que recebe o stream de vídeo do mobile diretamente, sem necessidade de backend separado.
+Aplicação desktop criada com Tauri 2.0.
 
-## 🚀 Como usar
+## 🚀 Configuração Inicial
 
-### 1. Instalar dependências
+### 1. Configurar Rust no PATH (Importante!)
+
+O Rust precisa estar no PATH do seu shell. Adicione ao seu arquivo de configuração do shell:
+
+**Para Fish (padrão no macOS):**
+```bash
+# Adicione ao ~/.config/fish/config.fish
+set -gx PATH $HOME/.cargo/bin $PATH
+```
+
+**Para Bash/Zsh:**
+```bash
+# Adicione ao ~/.bashrc ou ~/.zshrc
+export PATH="$HOME/.cargo/bin:$PATH"
+```
+
+Ou carregue manualmente antes de rodar:
+```bash
+source $HOME/.cargo/env
+```
+
+### 2. Instalar Dependências
 
 ```bash
-cd desktop
 yarn install
 ```
 
-**Nota:** O projeto usa Yarn com `node-modules` (não PnP) para compatibilidade com Electron. Se você tiver problemas, remova os arquivos PnP e reinstale:
-
-```bash
-rm -rf .pnp.* .yarn node_modules
-yarn install
-```
-
-### 2. Compilar e iniciar aplicativo
-
-```bash
-yarn start
-```
-
-Ou em modo desenvolvimento (com DevTools):
+## 🏃 Desenvolvimento
 
 ```bash
 yarn dev
 ```
 
-### 3. Conectar o mobile
+Isso vai:
+- Carregar o ambiente Rust automaticamente
+- Compilar o backend Rust
+- Iniciar a aplicação em modo desenvolvimento
 
-1. Abra o app desktop
-2. Clique em "Iniciar Servidor"
-3. O app mostrará o IP e porta do servidor (ex: `http://192.168.1.100:3000`)
-4. Copie essa URL e configure no app mobile
-5. O vídeo do mobile aparecerá automaticamente na tela
+## 📦 Build
 
-## 🏗️ Estrutura do Projeto
+```bash
+yarn build
+```
+
+## 📁 Estrutura
 
 ```
 desktop/
-├── src/
-│   ├── @types/          # Definições de tipos TypeScript
-│   ├── services/        # Serviços (servidor HTTP interno)
-│   ├── scripts/         # Scripts do frontend (TypeScript)
-│   ├── styles/          # Estilos CSS
-│   ├── main.ts          # Processo principal do Electron
-│   ├── preload.ts       # Preload script (bridge IPC)
-│   └── index.html       # HTML principal
-├── dist/                # Arquivos compilados (gerado)
-├── tsconfig.json        # Configuração TypeScript
-├── .eslintrc.json       # Configuração ESLint
-└── package.json
+├── src/              # Frontend (HTML/CSS/JS)
+├── src-tauri/        # Backend Rust
+└── scripts/          # Scripts auxiliares
 ```
 
-## 📝 Scripts Disponíveis
+## ⚠️ Troubleshooting
 
-```bash
-yarn build      # Compila TypeScript e copia arquivos estáticos
-yarn start      # Compila e inicia o app
-yarn dev        # Compila e inicia com DevTools
-yarn watch      # Compila TypeScript em modo watch
-yarn lint       # Executa ESLint
-yarn build:app  # Cria build de distribuição
-```
+### Erro: "No such file or directory (os error 2)"
 
-## 🔧 Tecnologias
+Isso significa que o Rust não está no PATH. Soluções:
 
-- **Electron** - Framework desktop
-- **TypeScript** - Tipagem estática
-- **ESLint** - Linter (mesma config do mobile)
-- **Node.js HTTP** - Servidor HTTP interno
+1. **Solução temporária:**
+   ```bash
+   source $HOME/.cargo/env
+   yarn tauri dev
+   ```
 
-## 📡 Como Funciona
+2. **Solução permanente:**
+   Adicione o Rust ao PATH no seu arquivo de configuração do shell (veja acima).
 
-1. **Desktop cria servidor HTTP interno** na porta 3000 (ou outra disponível)
-2. **Mobile conecta diretamente** no IP do desktop via HTTP POST `/frame`
-3. **Desktop recebe frames** e exibe via stream MJPEG em `/stream`
-4. **Interface mostra IP/porta** para facilitar configuração no mobile
-
-## 🎬 Próximos Passos
-
-Para usar como webcam virtual no macOS:
-
-1. **Instalar OBS Studio** (gratuito)
-2. **Instalar OBS Virtual Camera plugin**
-3. **Configurar OBS para capturar a janela do PYCam Desktop**
-4. **Ativar OBS Virtual Camera**
-5. **Selecionar "OBS Virtual Camera" como webcam em apps (Zoom, Teams, etc)**
-
-## 🔍 Desenvolvimento
-
-O projeto segue o mesmo padrão do mobile:
-- TypeScript estrito
-- ESLint com mesma configuração
-- Estrutura de pastas organizada
-- Path aliases configurados
+3. **Usar os scripts:**
+   Os scripts em `scripts/` já carregam o Rust automaticamente:
+   ```bash
+   yarn dev  # Usa scripts/dev.sh que carrega o Rust
+   ```
