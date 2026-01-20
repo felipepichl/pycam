@@ -16,7 +16,7 @@ import {
   useCameraDevice,
 } from 'react-native-vision-camera'
 
-import { useStreaming } from '../hooks/useStreaming'
+import { useWebSocketStreaming } from '../hooks/useWebSocketStreaming'
 
 export function Cam() {
   const [cameraPosition, setCameraPosition] = useState<'front' | 'back'>('back')
@@ -24,8 +24,13 @@ export function Cam() {
   const cameraRef = useRef<VisionCamera>(null)
 
   const device = useCameraDevice(cameraPosition)
-  const { isStreaming, startStreaming, stopStreaming, sendFrame } =
-    useStreaming()
+  const {
+    isStreaming,
+    startStreaming,
+    stopStreaming,
+    sendFrame,
+    isConnected,
+  } = useWebSocketStreaming()
 
   const handleToggleCamera = () => {
     setIsActive((prev) => !prev)
