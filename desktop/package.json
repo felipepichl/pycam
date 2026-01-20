@@ -1,0 +1,43 @@
+{
+  "name": "pycam-desktop",
+  "version": "1.0.0",
+  "description": "Desktop app for PYCam webcam streaming",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc && yarn copy:static",
+    "copy:static": "mkdir -p dist/styles dist/scripts && cp src/index.html dist/ && cp src/styles/*.css dist/styles/ && cp src/scripts/*.js dist/scripts/ 2>/dev/null || true",
+    "start": "yarn build && electron .",
+    "dev": "yarn build && electron . --dev",
+    "watch": "tsc --watch",
+    "lint": "eslint . --ext ts --report-unused-disable-directives --max-warnings 0",
+    "build:app": "yarn build && electron-builder"
+  },
+  "keywords": [
+    "webcam",
+    "electron",
+    "streaming"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "electron": "^28.0.0"
+  },
+  "devDependencies": {
+    "@rocketseat/eslint-config": "^2.2.2",
+    "@types/node": "^20.10.0",
+    "electron-builder": "^24.9.1",
+    "eslint": "^8.56.0",
+    "eslint-plugin-simple-import-sort": "^12.1.1",
+    "typescript": "^5.9.2"
+  },
+  "build": {
+    "appId": "com.triadge.pycam.desktop",
+    "productName": "PYCam Desktop",
+    "files": [
+      "dist/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.utilities"
+    }
+  }
+}

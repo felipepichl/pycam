@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PYCam Desktop</title>
+  <link rel="stylesheet" href="./styles/main.css" />
+</head>
+
+<body>
+  <div class="header">
+    <h1>🎥 PYCam Desktop</h1>
+  </div>
+
+  <div class="controls">
+    <div class="server-info" id="serverInfo" style="display: none;">
+      <div style="display: flex; flex-direction: column; gap: 4px; flex: 1;">
+        <div>
+          <span class="server-label">Servidor:</span>
+          <span class="server-url" id="serverUrl"></span>
+          <button id="copyBtn" class="copy-btn" title="Copiar URL Base">📋</button>
+        </div>
+        <div>
+          <span class="server-label">Endpoint Frame:</span>
+          <span class="server-url" id="serverFrameUrl"></span>
+          <button id="copyFrameBtn" class="copy-btn" title="Copiar URL Frame">📋</button>
+        </div>
+      </div>
+    </div>
+    <div class="controls-row">
+      <button id="startServerBtn" class="btn btn-primary">Iniciar Servidor</button>
+      <button id="stopServerBtn" class="btn btn-secondary" disabled>
+        Parar Servidor
+      </button>
+      <span id="status" class="status disconnected">Desconectado</span>
+    </div>
+  </div>
+
+  <div class="video-container">
+    <img id="videoStream" style="display: none;" />
+    <div id="noStream" class="no-stream">
+      <h2>📡 Aguardando conexão...</h2>
+      <p>Inicie o servidor e conecte o app mobile</p>
+    </div>
+  </div>
+
+  <script src="./scripts/main.js"></script>
+</body>
+
+</html>
