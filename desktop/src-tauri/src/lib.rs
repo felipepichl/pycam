@@ -23,6 +23,8 @@ pub enum SignalingMessage {
     Answer { sdp: String },
     #[serde(rename = "ice-candidate")]
     IceCandidate { candidate: serde_json::Value },
+    #[serde(rename = "stop")]
+    Stop,
 }
 
 // Estado compartilhado para signaling

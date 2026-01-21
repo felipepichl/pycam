@@ -4,6 +4,7 @@ type SignalingMessage =
   | { type: 'offer'; sdp: string }
   | { type: 'answer'; sdp: string }
   | { type: 'ice-candidate'; candidate: RTCIceCandidateInit }
+  | { type: 'stop' }
 
 export function useWebRTCReceiver() {
   console.log('🚀 useWebRTCReceiver hook initialized')
@@ -348,6 +349,18 @@ export function useWebRTCReceiver() {
                   iceCandidateQueueRef.current.push(message.candidate)
                   console.log('📦 ICE candidate queued (waiting for offer)')
                 }
+                break
+
+              case 'stop':
+                // Mobile parou o streaming
+                console.log('🛑 Stop message received, clearing stream')
+                if (peerConnectionRef.current) {
+                  peerConnectionRef.current.close()
+                  peerConnectionRef.current = null
+                }
+                setRemoteStream(null)
+                iceCandidateQueueRef.current = []
+                isProcessingOfferRef.current = false
                 break
             }
           } catch (err) {

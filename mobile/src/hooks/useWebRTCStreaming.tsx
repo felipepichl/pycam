@@ -13,6 +13,7 @@ type SignalingMessage =
   | { type: 'offer'; sdp: string }
   | { type: 'answer'; sdp: string }
   | { type: 'ice-candidate'; candidate: RTCIceCandidateInit }
+  | { type: 'stop' }
 
 export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
   const [serverUrl, setServerUrl] = useState(DEFAULT_SERVER_URL)
@@ -212,7 +213,11 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
     }
   }, [cameraPosition, sendSignalingMessage, pollSignalingMessages])
 
-  const stopStreaming = useCallback(() => {
+  const stopStreaming = useCallback(async () => {
+    // Enviar mensagem de stop para o desktop
+    await sendSignalingMessage({ type: 'stop' })
+    console.log('📤 Stop message sent')
+
     isStreamingRef.current = false
     setIsStreaming(false)
 
@@ -229,7 +234,7 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
     }
 
     // Não parar o stream local (mantém preview)
-  }, [])
+  }, [sendSignalingMessage])
 
   // Criar/recriar stream quando componente montar ou câmera mudar
   useEffect(() => {
