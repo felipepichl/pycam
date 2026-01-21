@@ -283,8 +283,9 @@ export function useWebRTCReceiver() {
                     pc.connectionState === 'failed' ||
                     pc.connectionState === 'disconnected'
                   ) {
-                    console.error('❌ WebRTC connection failed:', pc.connectionState)
-                    setError(`WebRTC connection ${pc.connectionState}`)
+                    console.log('🔄 WebRTC disconnected, clearing stream')
+                    setRemoteStream(null)
+                    setError(null)
                   }
                 }
 
