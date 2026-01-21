@@ -9,7 +9,7 @@ import { RTCView } from 'react-native-webrtc'
 import { useWebRTCStreaming } from '../hooks/useWebRTCStreaming'
 
 export function Cam() {
-  const [cameraPosition, setCameraPosition] = useState<'front' | 'back'>('back')
+  const [cameraPosition, setCameraPosition] = useState<'front' | 'back'>('front')
   const [isActive, setIsActive] = useState(true)
 
   const { startStreaming, stopStreaming, localStream } =
