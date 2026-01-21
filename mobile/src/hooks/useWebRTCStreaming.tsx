@@ -24,6 +24,7 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
   const localStreamRef = useRef<MediaStream | null>(null)
   const lastCameraPositionRef = useRef<'front' | 'back'>(cameraPosition)
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
+  const isStreamingRef = useRef<boolean>(false)
 
   // Configuração WebRTC para LAN (STUN para descoberta de IP, sem TURN)
   const rtcConfiguration: RTCConfiguration = {
@@ -60,7 +61,7 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
 
   // Receber mensagens de signaling via HTTP polling
   const pollSignalingMessages = useCallback(async () => {
-    if (!isStreaming || !peerConnectionRef.current) return
+    if (!isStreamingRef.current || !peerConnectionRef.current) return
 
     try {
       const response = await fetch(`${serverUrl}/mobile/receive`)
@@ -96,10 +97,11 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
     } catch (err) {
       console.error('❌ Error polling signaling messages:', err)
     }
-  }, [serverUrl, isStreaming])
+  }, [serverUrl])
 
   const startStreaming = useCallback(async () => {
     try {
+      isStreamingRef.current = true
       setIsStreaming(true)
       setError(null)
 
@@ -207,6 +209,7 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
   }, [cameraPosition, sendSignalingMessage, pollSignalingMessages])
 
   const stopStreaming = useCallback(() => {
+    isStreamingRef.current = false
     setIsStreaming(false)
 
     // Parar polling
