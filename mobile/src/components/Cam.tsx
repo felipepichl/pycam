@@ -34,15 +34,6 @@ export function Cam() {
   }, [stopStreaming])
 
   const handleToggleCamera = () => {
-    if (isActive) {
-      // Desligando a câmera - parar streaming
-      stopStreaming()
-      hasStartedRef.current = false
-    } else {
-      // Ligando a câmera - reiniciar streaming
-      startStreaming()
-      hasStartedRef.current = true
-    }
     setIsActive((prev) => !prev)
   }
 
@@ -71,15 +62,23 @@ export function Cam() {
             maxHeight: 400,
           }}
         >
-          {isActive && localStream ? (
-            <RTCView
-              streamURL={localStream.toURL()}
-              style={{ width: '100%', height: '100%' }}
-              objectFit="cover"
-              mirror={cameraPosition === 'front'}
-            />
+          {isActive ? (
+            localStream ? (
+              <RTCView
+                streamURL={localStream.toURL()}
+                style={{ width: '100%', height: '100%' }}
+                objectFit="cover"
+                mirror={cameraPosition === 'front'}
+              />
+            ) : (
+              <Box flex={1} bg="$black" justifyContent="center" alignItems="center">
+                <Loading />
+              </Box>
+            )
           ) : (
-            <Box flex={1} bg="$black" />
+            <Box flex={1} bg="$black" justifyContent="center" alignItems="center">
+              <CameraOff size={64} color="#52525b" />
+            </Box>
           )}
         </Box>
 
