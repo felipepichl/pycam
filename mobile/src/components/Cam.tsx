@@ -34,6 +34,15 @@ export function Cam() {
   }, [stopStreaming])
 
   const handleToggleCamera = () => {
+    if (isActive) {
+      // Desligando a câmera - parar streaming
+      stopStreaming()
+      hasStartedRef.current = false
+    } else {
+      // Ligando a câmera - reiniciar streaming
+      startStreaming()
+      hasStartedRef.current = true
+    }
     setIsActive((prev) => !prev)
   }
 
