@@ -7,7 +7,15 @@ import { useWebRTCReceiver } from '@/hooks/useWebRTCReceiver'
 export function Cam() {
   const [isActive, setIsActive] = useState(true)
 
-  const { remoteStream, error } = useWebRTCReceiver()
+  // Handler para comandos recebidos do mobile
+  const handleRemoteCommand = useCallback((command: { type: string }) => {
+    if (command.type === 'toggle-camera') {
+      console.log('📥 Received toggle-camera command from mobile')
+      setIsActive((prev) => !prev)
+    }
+  }, [])
+
+  const { remoteStream, error, sendCommand } = useWebRTCReceiver(handleRemoteCommand)
 
   // Callback ref para atribuir srcObject quando o elemento de vídeo for montado
   const videoRefCallback = useCallback(
@@ -21,6 +29,8 @@ export function Cam() {
 
   const handleToggleCamera = () => {
     setIsActive((prev) => !prev)
+    // Enviar comando para o mobile sincronizar o estado
+    sendCommand({ type: 'toggle-camera' })
   }
 
   return (

@@ -15,7 +15,13 @@ type SignalingMessage =
   | { type: 'ice-candidate'; candidate: RTCIceCandidateInit }
   | { type: 'stop' }
 
-export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
+// Tipos de comandos via DataChannel
+type DataChannelCommand = { type: 'toggle-camera' }
+
+export function useWebRTCStreaming(
+  cameraPosition: 'front' | 'back' = 'back',
+  onRemoteCommand?: (command: DataChannelCommand) => void,
+) {
   const [serverUrl, setServerUrl] = useState(DEFAULT_SERVER_URL)
   const [isStreaming, setIsStreaming] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -26,6 +32,13 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
   const lastCameraPositionRef = useRef<'front' | 'back'>(cameraPosition)
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null)
   const isStreamingRef = useRef<boolean>(false)
+  const dataChannelRef = useRef<RTCDataChannel | null>(null)
+  const onRemoteCommandRef = useRef(onRemoteCommand)
+
+  // Atualizar ref quando callback mudar
+  useEffect(() => {
+    onRemoteCommandRef.current = onRemoteCommand
+  }, [onRemoteCommand])
 
   // Configuração WebRTC para LAN (STUN para descoberta de IP, sem TURN)
   const rtcConfiguration: RTCConfiguration = {
@@ -133,6 +146,32 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
       const pc = new RTCPeerConnection(rtcConfiguration)
       peerConnectionRef.current = pc
 
+      // Criar DataChannel para comandos bidirecionais
+      const dataChannel = pc.createDataChannel('commands', {
+        ordered: true,
+      })
+      dataChannelRef.current = dataChannel
+
+      dataChannel.onopen = () => {
+        console.log('📡 DataChannel opened')
+      }
+
+      dataChannel.onclose = () => {
+        console.log('📡 DataChannel closed')
+      }
+
+      dataChannel.onmessage = (event: any) => {
+        try {
+          const command = JSON.parse(event.data) as DataChannelCommand
+          console.log('📥 Received command via DataChannel:', command)
+          if (onRemoteCommandRef.current) {
+            onRemoteCommandRef.current(command)
+          }
+        } catch (err) {
+          console.error('❌ Error parsing DataChannel message:', err)
+        }
+      }
+
       // Adicionar tracks do stream local
       stream.getTracks().forEach((track) => {
         pc.addTrack(track, stream)
@@ -227,6 +266,12 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
       pollingIntervalRef.current = null
     }
 
+    // Fechar DataChannel
+    if (dataChannelRef.current) {
+      dataChannelRef.current.close()
+      dataChannelRef.current = null
+    }
+
     // Fechar peer connection
     if (peerConnectionRef.current) {
       peerConnectionRef.current.close()
@@ -235,6 +280,16 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
 
     // Não parar o stream local (mantém preview)
   }, [sendSignalingMessage])
+
+  // Enviar comando via DataChannel
+  const sendCommand = useCallback((command: DataChannelCommand) => {
+    if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+      dataChannelRef.current.send(JSON.stringify(command))
+      console.log('📤 Sent command via DataChannel:', command)
+    } else {
+      console.warn('⚠️ DataChannel not open, cannot send command')
+    }
+  }, [])
 
   // Criar/recriar stream quando componente montar ou câmera mudar
   useEffect(() => {
@@ -315,5 +370,6 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
     stopStreaming,
     localStream,
     error,
+    sendCommand,
   }
 }

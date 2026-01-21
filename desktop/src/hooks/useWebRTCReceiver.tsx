@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 type SignalingMessage =
   | { type: 'offer'; sdp: string }
@@ -6,7 +6,12 @@ type SignalingMessage =
   | { type: 'ice-candidate'; candidate: RTCIceCandidateInit }
   | { type: 'stop' }
 
-export function useWebRTCReceiver() {
+// Tipos de comandos via DataChannel
+type DataChannelCommand = { type: 'toggle-camera' }
+
+export function useWebRTCReceiver(
+  onRemoteCommand?: (command: DataChannelCommand) => void,
+) {
   console.log('🚀 useWebRTCReceiver hook initialized')
 
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
@@ -17,6 +22,13 @@ export function useWebRTCReceiver() {
   const serverUrlRef = useRef<string | null>(null)
   const iceCandidateQueueRef = useRef<RTCIceCandidateInit[]>([])
   const isProcessingOfferRef = useRef<boolean>(false)
+  const dataChannelRef = useRef<RTCDataChannel | null>(null)
+  const onRemoteCommandRef = useRef(onRemoteCommand)
+
+  // Atualizar ref quando callback mudar
+  useEffect(() => {
+    onRemoteCommandRef.current = onRemoteCommand
+  }, [onRemoteCommand])
 
   // Configuração WebRTC para LAN (STUN para descoberta de IP, sem TURN)
   const rtcConfiguration: RTCConfiguration = {
@@ -234,6 +246,34 @@ export function useWebRTCReceiver() {
                 // Criar nova conexão
                 const pc = new RTCPeerConnection(rtcConfiguration)
                 peerConnectionRef.current = pc
+
+                // Handler para receber DataChannel do mobile
+                pc.ondatachannel = (event) => {
+                  console.log('📡 DataChannel received from mobile')
+                  const dataChannel = event.channel
+                  dataChannelRef.current = dataChannel
+
+                  dataChannel.onopen = () => {
+                    console.log('📡 DataChannel opened')
+                  }
+
+                  dataChannel.onclose = () => {
+                    console.log('📡 DataChannel closed')
+                    dataChannelRef.current = null
+                  }
+
+                  dataChannel.onmessage = (msgEvent) => {
+                    try {
+                      const command = JSON.parse(msgEvent.data) as DataChannelCommand
+                      console.log('📥 Received command via DataChannel:', command)
+                      if (onRemoteCommandRef.current) {
+                        onRemoteCommandRef.current(command)
+                      }
+                    } catch (err) {
+                      console.error('❌ Error parsing DataChannel message:', err)
+                    }
+                  }
+                }
 
                 // Handler para receber stream remoto
                 pc.ontrack = (event) => {
@@ -469,5 +509,15 @@ export function useWebRTCReceiver() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
-  return { remoteStream, error }
+  // Enviar comando via DataChannel
+  const sendCommand = useCallback((command: DataChannelCommand) => {
+    if (dataChannelRef.current && dataChannelRef.current.readyState === 'open') {
+      dataChannelRef.current.send(JSON.stringify(command))
+      console.log('📤 Sent command via DataChannel:', command)
+    } else {
+      console.warn('⚠️ DataChannel not open, cannot send command')
+    }
+  }, [])
+
+  return { remoteStream, error, sendCommand }
 }

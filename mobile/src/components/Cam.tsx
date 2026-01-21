@@ -3,7 +3,7 @@ import { Loading } from '@components/Loading'
 import { Box } from '@components/ui/box'
 import { VStack } from '@components/ui/vstack'
 import { Camera, CameraOff, SwitchCamera } from 'lucide-react-native'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { RTCView } from 'react-native-webrtc'
 
 import { useWebRTCStreaming } from '../hooks/useWebRTCStreaming'
@@ -12,8 +12,16 @@ export function Cam() {
   const [cameraPosition, setCameraPosition] = useState<'front' | 'back'>('front')
   const [isActive, setIsActive] = useState(true)
 
-  const { startStreaming, stopStreaming, localStream } =
-    useWebRTCStreaming(cameraPosition)
+  // Handler para comandos recebidos do desktop
+  const handleRemoteCommand = useCallback((command: { type: string }) => {
+    if (command.type === 'toggle-camera') {
+      console.log('📥 Received toggle-camera command from desktop')
+      setIsActive((prev) => !prev)
+    }
+  }, [])
+
+  const { startStreaming, stopStreaming, localStream, sendCommand } =
+    useWebRTCStreaming(cameraPosition, handleRemoteCommand)
 
   const hasStartedRef = useRef(false)
 
@@ -35,6 +43,8 @@ export function Cam() {
 
   const handleToggleCamera = () => {
     setIsActive((prev) => !prev)
+    // Enviar comando para o desktop sincronizar o estado
+    sendCommand({ type: 'toggle-camera' })
   }
 
   const handleSwitchCamera = () => {
