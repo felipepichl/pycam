@@ -1,18 +1,13 @@
-import { Camera, CameraOff, SwitchCamera, Wifi, WifiOff } from 'lucide-react'
+import { Camera, CameraOff } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { useWebRTCReceiver } from '@/hooks/useWebRTCReceiver'
 
 export function Cam() {
-  console.log('🎥 Cam component rendering')
-
-  const [cameraPosition, setCameraPosition] = useState<'front' | 'back'>('back')
   const [isActive, setIsActive] = useState(true)
-  const [isStreaming, setIsStreaming] = useState(false)
 
   const { remoteStream, error } = useWebRTCReceiver()
-  console.log('🎥 Cam: remoteStream=', remoteStream, 'error=', error)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   // Atualizar srcObject do vídeo quando stream mudar
@@ -49,23 +44,12 @@ export function Cam() {
 
   const handleToggleCamera = () => {
     setIsActive((prev) => !prev)
-    if (isActive && isStreaming) {
-      setIsStreaming(false)
-    }
-  }
-
-  const handleSwitchCamera = () => {
-    setCameraPosition((prev) => (prev === 'front' ? 'back' : 'front'))
-  }
-
-  const handleToggleStreaming = () => {
-    setIsStreaming((prev) => !prev)
   }
 
   return (
     <div className="flex h-full w-full flex-col items-center bg-[#121214] pt-8">
       <div className="aspect-square max-h-[400px] w-[90%] max-w-[400px] overflow-hidden rounded-xl bg-black">
-        {remoteStream ? (
+        {isActive && remoteStream ? (
           <video
             ref={videoRef}
             autoPlay
@@ -74,10 +58,11 @@ export function Cam() {
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center text-gray-500">
-            {error ? (
+            {!isActive ? (
+              'Câmera desativada'
+            ) : error ? (
               <div className="text-center">
                 <p className="text-red-400">{error}</p>
-                <p className="text-sm mt-2">Signaling não implementado</p>
               </div>
             ) : (
               'Aguardando stream...'
@@ -90,14 +75,6 @@ export function Cam() {
         <Button
           size="icon"
           variant="outline"
-          onClick={handleSwitchCamera}
-          className="rounded-xl"
-        >
-          <SwitchCamera className="h-6 w-6 text-[#00B37E]" />
-        </Button>
-        <Button
-          size="icon"
-          variant="outline"
           onClick={handleToggleCamera}
           className="rounded-xl"
         >
@@ -105,22 +82,6 @@ export function Cam() {
             <CameraOff className="h-6 w-6 text-[#00B37E]" />
           ) : (
             <Camera className="h-6 w-6 text-[#00B37E]" />
-          )}
-        </Button>
-        <Button
-          size="icon"
-          variant={isStreaming ? 'default' : 'outline'}
-          onClick={handleToggleStreaming}
-          className={
-            isStreaming
-              ? 'rounded-xl border-[#00B37E] bg-[#00875F] hover:bg-[#00B37E]'
-              : 'rounded-xl border-[#00B37E]'
-          }
-        >
-          {isStreaming ? (
-            <WifiOff className="h-6 w-6 text-white" />
-          ) : (
-            <Wifi className="h-6 w-6 text-[#00B37E]" />
           )}
         </Button>
       </div>
