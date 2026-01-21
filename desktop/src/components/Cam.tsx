@@ -20,7 +20,11 @@ export function Cam() {
   }, [remoteStream, isActive])
 
   const handleToggleCamera = () => {
-    setIsActive((prev) => !prev)
+    console.log('🔘 Toggle camera clicked, current isActive:', isActive)
+    setIsActive((prev) => {
+      console.log('🔄 Setting isActive to:', !prev)
+      return !prev
+    })
   }
 
   return (
