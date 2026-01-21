@@ -10,37 +10,14 @@ export function Cam() {
   const { remoteStream, error } = useWebRTCReceiver()
   const videoRef = useRef<HTMLVideoElement>(null)
 
-  // Atualizar srcObject do vídeo quando stream mudar
+  // Atualizar srcObject do vídeo quando stream mudar ou isActive mudar
   useEffect(() => {
-    if (videoRef.current && remoteStream) {
-      console.log('📹 Setting video srcObject:', {
-        streamId: remoteStream.id,
-        tracks: remoteStream.getTracks().map(t => ({
-          kind: t.kind,
-          id: t.id,
-          enabled: t.enabled,
-          readyState: t.readyState,
-          muted: t.muted,
-        })),
-      })
+    if (videoRef.current && remoteStream && isActive) {
       videoRef.current.srcObject = remoteStream
-      console.log('✅ Video srcObject updated')
-      
-      // Verificar se o vídeo está realmente reproduzindo
-      videoRef.current.onloadedmetadata = () => {
-        console.log('✅ Video metadata loaded')
-      }
-      videoRef.current.onplay = () => {
-        console.log('✅ Video started playing')
-      }
-      videoRef.current.onerror = (e) => {
-        console.error('❌ Video error:', e)
-      }
-    } else if (videoRef.current && !remoteStream) {
+    } else if (videoRef.current) {
       videoRef.current.srcObject = null
-      console.log('🛑 Video srcObject cleared')
     }
-  }, [remoteStream])
+  }, [remoteStream, isActive])
 
   const handleToggleCamera = () => {
     setIsActive((prev) => !prev)
@@ -48,16 +25,15 @@ export function Cam() {
 
   return (
     <div className="flex h-full w-full flex-col items-center bg-[#121214] pt-8">
-      <div className="aspect-square max-h-[400px] w-[90%] max-w-[400px] overflow-hidden rounded-xl bg-black">
-        {isActive && remoteStream ? (
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            className="h-full w-full object-cover"
-          />
-        ) : (
-          <div className="flex h-full w-full items-center justify-center text-gray-500">
+      <div className="aspect-square max-h-[400px] w-[90%] max-w-[400px] overflow-hidden rounded-xl bg-black relative">
+        <video
+          ref={videoRef}
+          autoPlay
+          playsInline
+          className={`h-full w-full object-cover ${isActive && remoteStream ? 'block' : 'hidden'}`}
+        />
+        {(!isActive || !remoteStream) && (
+          <div className="absolute inset-0 flex h-full w-full items-center justify-center text-gray-500">
             {!isActive ? (
               'Câmera desativada'
             ) : error ? (
