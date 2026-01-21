@@ -73,7 +73,9 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
       for (const message of messages) {
         switch (message.type) {
           case 'answer':
-            if (peerConnectionRef.current) {
+            // Só processar answer se ainda não temos remote description
+            if (peerConnectionRef.current &&
+                peerConnectionRef.current.signalingState === 'have-local-offer') {
               await peerConnectionRef.current.setRemoteDescription(
                 new RTCSessionDescription({
                   type: 'answer',
@@ -81,6 +83,8 @@ export function useWebRTCStreaming(cameraPosition: 'front' | 'back' = 'back') {
                 }),
               )
               console.log('✅ Answer received and set')
+            } else {
+              console.log('⚠️ Ignoring answer - already in stable state')
             }
             break
 
