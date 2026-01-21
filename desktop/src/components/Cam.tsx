@@ -1,5 +1,5 @@
 import { Camera, CameraOff } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useState } from 'react'
 
 import { Button } from '@/components/ui/button'
 import { useWebRTCReceiver } from '@/hooks/useWebRTCReceiver'
@@ -8,16 +8,16 @@ export function Cam() {
   const [isActive, setIsActive] = useState(true)
 
   const { remoteStream, error } = useWebRTCReceiver()
-  const videoRef = useRef<HTMLVideoElement>(null)
 
-  // Atualizar srcObject do vídeo quando stream mudar
-  useEffect(() => {
-    if (videoRef.current && remoteStream) {
-      videoRef.current.srcObject = remoteStream
-    } else if (videoRef.current) {
-      videoRef.current.srcObject = null
-    }
-  }, [remoteStream])
+  // Callback ref para atribuir srcObject quando o elemento de vídeo for montado
+  const videoRefCallback = useCallback(
+    (videoElement: HTMLVideoElement | null) => {
+      if (videoElement && remoteStream) {
+        videoElement.srcObject = remoteStream
+      }
+    },
+    [remoteStream],
+  )
 
   const handleToggleCamera = () => {
     setIsActive((prev) => !prev)
@@ -29,7 +29,7 @@ export function Cam() {
         {isActive ? (
           remoteStream ? (
             <video
-              ref={videoRef}
+              ref={videoRefCallback}
               autoPlay
               playsInline
               className="h-full w-full object-cover"
