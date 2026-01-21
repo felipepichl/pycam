@@ -5,11 +5,14 @@ import { Button } from '@/components/ui/button'
 import { useWebRTCReceiver } from '@/hooks/useWebRTCReceiver'
 
 export function Cam() {
+  console.log('🎥 Cam component rendering')
+
   const [cameraPosition, setCameraPosition] = useState<'front' | 'back'>('back')
   const [isActive, setIsActive] = useState(true)
   const [isStreaming, setIsStreaming] = useState(false)
 
   const { remoteStream, error } = useWebRTCReceiver()
+  console.log('🎥 Cam: remoteStream=', remoteStream, 'error=', error)
   const videoRef = useRef<HTMLVideoElement>(null)
 
   // Atualizar srcObject do vídeo quando stream mudar

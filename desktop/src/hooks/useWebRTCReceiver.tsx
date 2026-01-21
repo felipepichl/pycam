@@ -6,6 +6,8 @@ type SignalingMessage =
   | { type: 'ice-candidate'; candidate: RTCIceCandidateInit }
 
 export function useWebRTCReceiver() {
+  console.log('🚀 useWebRTCReceiver hook initialized')
+
   const [remoteStream, setRemoteStream] = useState<MediaStream | null>(null)
   const [error, setError] = useState<string | null>(null)
 
@@ -49,7 +51,9 @@ export function useWebRTCReceiver() {
   }
 
   useEffect(() => {
+    console.log('🔄 useWebRTCReceiver useEffect running')
     const init = async () => {
+      console.log('🔄 init() function starting')
       try {
         // Verificar se Tauri está disponível
         if (typeof window === 'undefined') {
