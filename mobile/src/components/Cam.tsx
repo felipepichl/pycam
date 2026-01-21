@@ -3,7 +3,7 @@ import { Loading } from '@components/Loading'
 import { Box } from '@components/ui/box'
 import { VStack } from '@components/ui/vstack'
 import { Camera, CameraOff, SwitchCamera } from 'lucide-react-native'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { RTCView } from 'react-native-webrtc'
 
 import { useWebRTCStreaming } from '../hooks/useWebRTCStreaming'
@@ -15,14 +15,20 @@ export function Cam() {
   const { startStreaming, stopStreaming, localStream } =
     useWebRTCStreaming(cameraPosition)
 
-  // Iniciar streaming automaticamente quando o componente montar
+  const hasStartedRef = useRef(false)
+
+  // Iniciar streaming automaticamente quando o componente montar (apenas uma vez)
   useEffect(() => {
-    startStreaming()
+    if (!hasStartedRef.current) {
+      hasStartedRef.current = true
+      startStreaming()
+    }
 
     return () => {
       stopStreaming()
     }
-  }, [startStreaming, stopStreaming])
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
 
   const handleToggleCamera = () => {
     setIsActive((prev) => !prev)
