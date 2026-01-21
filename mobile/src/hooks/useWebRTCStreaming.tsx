@@ -291,21 +291,66 @@ export function useWebRTCStreaming(
     }
   }, [])
 
-  // Criar/recriar stream quando componente montar ou câmera mudar
-  useEffect(() => {
-    const cameraChanged = lastCameraPositionRef.current !== cameraPosition
-    lastCameraPositionRef.current = cameraPosition
+  // Função para trocar a câmera mantendo a conexão WebRTC
+  const switchCamera = useCallback(async () => {
+    try {
+      const newFacingMode = cameraPosition === 'back' ? 'environment' : 'user'
+      console.log('📷 Switching camera to:', newFacingMode)
 
-    const createPreviewStream = async () => {
-      try {
-        const oldStream = localStreamRef.current
+      // Criar novo stream com a nova câmera
+      const newStream = await mediaDevices.getUserMedia({
+        audio: false,
+        video: {
+          facingMode: newFacingMode,
+          width: { ideal: 1280 },
+          height: { ideal: 720 },
+          frameRate: { ideal: 30 },
+        },
+      })
 
-        // Parar stream antigo se existir
-        if (oldStream) {
-          oldStream.getTracks().forEach((track) => track.stop())
+      const newVideoTrack = newStream.getVideoTracks()[0]
+      console.log('✅ New camera stream obtained:', newVideoTrack.id)
+
+      // Se temos uma conexão WebRTC ativa, substituir a track
+      if (peerConnectionRef.current && isStreamingRef.current) {
+        const senders = peerConnectionRef.current.getSenders()
+        const videoSender = senders.find((sender: any) =>
+          sender.track && sender.track.kind === 'video'
+        )
+
+        if (videoSender) {
+          // @ts-ignore - replaceTrack existe em react-native-webrtc
+          await videoSender.replaceTrack(newVideoTrack)
+          console.log('✅ Video track replaced in WebRTC connection')
         }
+      }
 
-        console.log('📷 Creating preview stream with camera:', cameraPosition)
+      // Parar tracks do stream antigo
+      if (localStreamRef.current) {
+        localStreamRef.current.getTracks().forEach((track: any) => {
+          track.stop()
+          console.log('🛑 Stopped old track:', track.kind)
+        })
+      }
+
+      // Atualizar referências
+      localStreamRef.current = newStream
+      setLocalStream(newStream)
+      console.log('✅ Camera switched successfully')
+    } catch (err) {
+      console.error('❌ Error switching camera:', err)
+      setError(err instanceof Error ? err.message : 'Failed to switch camera')
+    }
+  }, [cameraPosition])
+
+  // Criar stream inicial quando componente montar
+  useEffect(() => {
+    const createInitialStream = async () => {
+      // Só criar se não existir ainda
+      if (localStreamRef.current) return
+
+      try {
+        console.log('📷 Creating initial preview stream with camera:', cameraPosition)
         const stream = await mediaDevices.getUserMedia({
           audio: false,
           video: {
@@ -318,32 +363,26 @@ export function useWebRTCStreaming(
 
         localStreamRef.current = stream
         setLocalStream(stream)
-        console.log('✅ Preview stream created with camera:', cameraPosition)
-        console.log(
-          '📹 Stream tracks:',
-          stream.getTracks().map((t) => ({
-            kind: t.kind,
-            enabled: t.enabled,
-            readyState: t.readyState,
-          })),
-        )
+        console.log('✅ Initial preview stream created')
       } catch (err) {
-        console.error('❌ Error creating preview stream:', err)
+        console.error('❌ Error creating initial preview stream:', err)
         setError(err instanceof Error ? err.message : 'Failed to access camera')
       }
     }
 
-    // Criar stream se não existir ou se a câmera mudou
-    if (!localStreamRef.current || cameraChanged) {
-      createPreviewStream()
-    }
+    createInitialStream()
+  }, []) // Executar apenas na montagem
 
-    // Cleanup: parar stream apenas ao desmontar o componente
-    return () => {
-      // Não fazer cleanup aqui - o stream deve persistir para preview
-      // O cleanup será feito apenas quando o componente for desmontado completamente
+  // Trocar câmera quando cameraPosition mudar (exceto na montagem inicial)
+  useEffect(() => {
+    const cameraChanged = lastCameraPositionRef.current !== cameraPosition
+    lastCameraPositionRef.current = cameraPosition
+
+    // Só trocar se já temos um stream e a câmera realmente mudou
+    if (localStreamRef.current && cameraChanged) {
+      switchCamera()
     }
-  }, [cameraPosition]) // Removido isStreaming das dependências
+  }, [cameraPosition, switchCamera])
 
   // Cleanup ao desmontar componente completamente
   useEffect(() => {
