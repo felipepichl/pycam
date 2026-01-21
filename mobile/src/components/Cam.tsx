@@ -17,18 +17,21 @@ export function Cam() {
 
   const hasStartedRef = useRef(false)
 
-  // Iniciar streaming automaticamente quando o componente montar (apenas uma vez)
+  // Iniciar streaming automaticamente quando o localStream estiver pronto
   useEffect(() => {
-    if (!hasStartedRef.current) {
+    if (localStream && !hasStartedRef.current) {
       hasStartedRef.current = true
+      console.log('🚀 localStream ready, starting streaming...')
       startStreaming()
     }
+  }, [localStream, startStreaming])
 
+  // Cleanup ao desmontar
+  useEffect(() => {
     return () => {
       stopStreaming()
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, [stopStreaming])
 
   const handleToggleCamera = () => {
     setIsActive((prev) => !prev)
