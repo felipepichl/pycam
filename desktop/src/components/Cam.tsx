@@ -1,7 +1,6 @@
 import { Camera, CameraOff } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 
-import { Button } from '@/components/ui/button'
 import { useWebRTCReceiver } from '@/hooks/useWebRTCReceiver'
 
 export function Cam() {
@@ -52,18 +51,16 @@ export function Cam() {
       </div>
 
       <div className="mt-4 flex flex-row items-center justify-center gap-3">
-        <Button
-          size="icon"
-          variant="outline"
+        <button
           onClick={handleToggleCamera}
-          className="rounded-xl"
+          className="h-12 w-12 rounded-xl border border-[#00B37E] bg-transparent hover:bg-[#29292E] flex items-center justify-center"
         >
           {isActive ? (
             <CameraOff className="h-6 w-6 text-[#00B37E]" />
           ) : (
             <Camera className="h-6 w-6 text-[#00B37E]" />
           )}
-        </Button>
+        </button>
       </div>
     </div>
   )
